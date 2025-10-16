@@ -1,0 +1,58 @@
+name: Build Windows Executable
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  release:
+    types: [created]
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+        
+    - name: Build executable with PyInstaller
+      run: |
+        pyinstaller --clean --noconfirm excel_combiner_windows.spec
+        
+    - name: Test executable exists
+      run: |
+        if (Test-Path "dist/ExcelCombiner.exe") {
+          Write-Host "✅ Executable created successfully"
+          Get-Item "dist/ExcelCombiner.exe" | Select-Object Name, Length, LastWriteTime
+        } else {
+          Write-Host "❌ Executable not found"
+          exit 1
+        }
+        
+    - name: Upload executable artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: ExcelCombiner-Windows
+        path: dist/ExcelCombiner.exe
+        
+    - name: Create Release Asset (on release)
+      if: github.event_name == 'release'
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: dist/ExcelCombiner.exe
+        asset_name: ExcelCombiner-${{ github.event.release.tag_name }}.exe
+        asset_content_type: application/octet-stream
