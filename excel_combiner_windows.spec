@@ -52,5 +52,5 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     icon=None,
-    version='version_info.txt'  # Optional version info file for Windows
+    version=None  # No version info file needed
 )
